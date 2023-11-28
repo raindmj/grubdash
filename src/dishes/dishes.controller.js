@@ -95,7 +95,7 @@ function doesDishExist(req, res, next) {
   } else {
     next({
       status: 404,
-      message: `dish id not found: ${dishId}`,
+      message: `Dish does not exist: ${dishId}`,
     });
   }
 }
@@ -103,6 +103,33 @@ function doesDishExist(req, res, next) {
 //read
 function read(req, res, next) {
   res.send({ data: res.locals.dish });
+}
+
+function doesRouteIdMatchBodyId(req, res, next) {
+  const { id } = req.body.data;
+//   console.log("ID HERE******************", id);
+  const { dishId } = req.params;
+//   console.log("ID IN ROUTE HERE*********", dishId);
+  if (id && id !== dishId) {
+    next({
+      status: 400,
+      message: `Dish id does not match route id. Dish: ${id}, Route: ${dishId}`,
+    });
+  } else {
+    next();
+  }
+}
+
+function update(req, res, next) {
+  const dish = res.locals.dish;
+  const { name, description, price, image_url } = req.body.data;
+
+  //update dish
+  dish.name = name;
+  dish.description = description;
+  (dish.price = price), (dish.image_url = image_url);
+
+  res.send({ data: dish });
 }
 
 module.exports = {
@@ -119,4 +146,17 @@ module.exports = {
     create,
   ],
   read: [doesDishExist, read],
+  update: [
+    doesDishExist,
+    doesRouteIdMatchBodyId,
+    requiredField("name"),
+    requiredField("description"),
+    requiredField("image_url"),
+    cannotBeEmptyString("name"),
+    cannotBeEmptyString("description"),
+    cannotBeEmptyString("image_url"),
+    priceGreaterThanZero,
+    priceIsAnInteger,
+    update,
+  ],
 };

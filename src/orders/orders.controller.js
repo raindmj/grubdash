@@ -70,11 +70,11 @@ function validateOrderQuantity(req, res, next) {
   // Find index of first dish in dishes array that meets all conditions (does not address multiple dishes that don't meet conditions, use filter if need to do that)
   const indexOfDish = dishes.findIndex(
     (dish) =>
-    // Look for the dish that doesn't satisfy any of the following conditions
+      // Look for the dish that doesn't satisfy any of the following conditions
       !(dish.quantity && Number.isInteger(dish.quantity) && dish.quantity > 0)
   );
 
-//   console.log("INDEX OF DISH HERE*****************", indexOfDish)
+  //   console.log("INDEX OF DISH HERE*****************", indexOfDish)
 
   // Index === -1 if dish cannot be found
   if (indexOfDish === -1) {
@@ -103,6 +103,24 @@ function create(req, res, next) {
   res.status(201).send({ data: newOrder });
 }
 
+function doesOrderExist(req, res, next) {
+  const { orderId } = req.params;
+  const foundOrder = orders.find((order) => order.id === orderId);
+  if (foundOrder) {
+    res.locals.order = foundOrder;
+    return next();
+  } else {
+    next({
+      status: 404,
+      message: `Order does not exist: ${orderId}`,
+    });
+  }
+}
+
+function read(req, res, next) {
+  res.send({ data: res.locals.order });
+}
+
 module.exports = {
   list,
   create: [
@@ -115,4 +133,5 @@ module.exports = {
     validateOrderQuantity,
     create,
   ],
+  read: [doesOrderExist, read],
 };

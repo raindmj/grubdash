@@ -8,6 +8,7 @@ const nextId = require("../utils/nextId");
 
 // TODO: Implement the /orders handlers needed to make the tests pass
 
+// LIST METHOD
 function list(req, res, next) {
   res.send({ data: orders });
 }
@@ -89,6 +90,7 @@ function validateOrderQuantity(req, res, next) {
   }
 }
 
+// CREATE METHOD
 function create(req, res, next) {
   const { deliverTo, mobileNumber, status, dishes } = req.body.data;
   const newOrder = {
@@ -105,9 +107,10 @@ function create(req, res, next) {
 
 function doesOrderExist(req, res, next) {
   const { orderId } = req.params;
-  const foundOrder = orders.find((order) => order.id === orderId);
-  if (foundOrder) {
-    res.locals.order = foundOrder;
+  const orderIndex = orders.findIndex((order) => order.id === orderId);
+  if (orderIndex !== -1) {
+    res.locals.orderIndex = orderIndex;
+    res.locals.order = orders[orderIndex];
     return next();
   } else {
     next({
@@ -117,6 +120,7 @@ function doesOrderExist(req, res, next) {
   }
 }
 
+// READ METHOD
 function read(req, res, next) {
   res.send({ data: res.locals.order });
 }
@@ -150,6 +154,7 @@ function statusOfDelivered(req, res, next) {
 
 function isStatusValid(req, res, next) {
   const { status } = req.body.data;
+  //   console.log("REQ BODY DATA FOR IS STATUS VALID****************", req.body.data);
   if (
     status &&
     status.length > 0 &&
@@ -167,6 +172,7 @@ function isStatusValid(req, res, next) {
   }
 }
 
+// UPDATE METHOD
 function update(req, res, next) {
   const order = res.locals.order;
   const { deliverTo, mobileNumber, status, dishes } = req.body.data;
@@ -178,6 +184,34 @@ function update(req, res, next) {
     (order.dishes = dishes);
 
   res.send({ data: order });
+}
+
+function orderMustBePending(req, res, next) {
+  const status = res.locals.order.status;
+//   console.log(res.locals.order)
+  if (status !== "pending") {
+    next({
+      status: 400,
+      message: `An order cannot be deleted unless it is pending.`,
+    });
+  } else {
+    next();
+  }
+}
+
+function destroy(req, res, next) {
+  const { orderId } = req.params;
+  const orderIndex = res.locals.orderIndex;
+  if (orderIndex === -1) {
+    next({
+      status: 404,
+      message: `No matching order found: ${orderId}`,
+    });
+  } else {
+    orders.splice(orderIndex, 1);
+    // console.log(`Order with order id ${orderId} deleted`);
+    res.sendStatus(204);
+  }
 }
 
 module.exports = {
@@ -207,4 +241,5 @@ module.exports = {
     validateOrderQuantity,
     update,
   ],
+  destroy: [doesOrderExist, orderMustBePending, destroy],
 };

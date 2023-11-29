@@ -7,7 +7,8 @@ router
   .route("/:orderId")
   .get(controller.read)
   .put(controller.update)
-//   .all(methodNotAllowed);
+  .delete(controller.destroy)
+  .all(methodNotAllowed);
 
 router
   .route("/")

@@ -121,6 +121,65 @@ function read(req, res, next) {
   res.send({ data: res.locals.order });
 }
 
+function doesRouteIdMatchBodyId(req, res, next) {
+  const { id } = req.body.data;
+  //   console.log("ID HERE******************", id);
+  const { orderId } = req.params;
+  //   console.log("ID IN ROUTE HERE*********", dishId);
+  if (id && id !== orderId) {
+    next({
+      status: 400,
+      message: `Order id does not match route id. Order: ${id}, Route: ${orderId}.`,
+    });
+  } else {
+    next();
+  }
+}
+
+function statusOfDelivered(req, res, next) {
+  const { status } = req.body.data;
+  if (status === "delivered") {
+    next({
+      status: 400,
+      message: `A delivered order cannot be changed`,
+    });
+  } else {
+    next();
+  }
+}
+
+function isStatusValid(req, res, next) {
+  const { status } = req.body.data;
+  if (
+    status &&
+    status.length > 0 &&
+    (status === "delivered" ||
+      status === "pending" ||
+      status === "preparing" ||
+      status === "out-for-delivery")
+  ) {
+    next();
+  } else {
+    next({
+      status: 400,
+      message: `Order must have a status of pending, preparing, out-for-delivery, delivered`,
+    });
+  }
+}
+
+function update(req, res, next) {
+  const order = res.locals.order;
+  const { deliverTo, mobileNumber, status, dishes } = req.body.data;
+
+  //update order
+  (order.deliverTo = deliverTo),
+    (order.mobileNumber = mobileNumber),
+    (order.status = status),
+    (order.dishes = dishes);
+
+  res.send({ data: order });
+}
+
 module.exports = {
   list,
   create: [
@@ -134,4 +193,18 @@ module.exports = {
     create,
   ],
   read: [doesOrderExist, read],
+  update: [
+    doesOrderExist,
+    requiredField("deliverTo"),
+    requiredField("mobileNumber"),
+    cannotBeEmptyString("deliverTo"),
+    cannotBeEmptyString("mobileNumber"),
+    doesRouteIdMatchBodyId,
+    isStatusValid,
+    statusOfDelivered,
+    doesDishesArrayExist,
+    isDishesAnArrayWithAtLeastOneDish,
+    validateOrderQuantity,
+    update,
+  ],
 };

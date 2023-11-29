@@ -12,7 +12,7 @@ const methodNotAllowed = require("../errors/methodNotAllowed");
 router
   .route("/")
   .get(controller.list)
-//   .post(controller.create)
-//   .all(methodNotAllowed);
+  .post(controller.create)
+  .all(methodNotAllowed);
 
 module.exports = router;
